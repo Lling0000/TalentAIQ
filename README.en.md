@@ -13,6 +13,10 @@ It reads candidate-authorized local Codex records, Claude Code records, local Gi
 
 It is not a screening engine, ranking system, rejection system, or hiring recommendation system. TalentAIQ Lite only organizes observable evidence, missing evidence, and human interview follow-up questions.
 
+## Preview
+
+![TalentAIQ Lite poster example](./docs/assets/talentaiq-poster-demo.png)
+
 ## Why It Exists
 
 AI coding is now part of real engineering work, but "used AI a lot" is not the same as "can ship reliable software." Interviewers need evidence they can inspect and verify:
@@ -134,6 +138,18 @@ Every conclusion includes an evidence level:
 | `limited` | Partial signal, key evidence missing | Must be validated |
 | `inferred` | Indirect signal | Hypothesis only |
 | `missing` | No accessible evidence | Do not draw a negative conclusion |
+
+By default, TalentAIQ Lite scans AI JSONL records without file-count or record-count limits.
+If you need a temporary performance guardrail, you can still add explicit limits:
+
+```bash
+python3 -m talentaiq.cli \
+  --authorize \
+  --repo . \
+  --max-ai-jsonl-files 1000 \
+  --max-ai-jsonl-records 100000 \
+  --output-dir reports/self-check
+```
 
 ## Privacy And Safety Boundaries
 

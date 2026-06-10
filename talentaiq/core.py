@@ -18,6 +18,8 @@ class RunConfig:
     output_dir: str = "reports"
     codex_dir: str | None = None
     claude_dir: str | None = None
+    max_ai_jsonl_files: int | None = None
+    max_ai_jsonl_records: int | None = None
     github_json: str | None = None
     github_user: str | None = None
     enable_github: bool = False
@@ -31,8 +33,18 @@ def run_assessment(config: RunConfig) -> dict[str, Any]:
     redactor = Redactor()
     candidate_label = redactor.redact_text(config.candidate_label or "candidate")
     sources = [
-        collect_claude(config.claude_dir, redactor),
-        collect_codex(config.codex_dir, redactor),
+        collect_claude(
+            config.claude_dir,
+            redactor,
+            max_jsonl_files=config.max_ai_jsonl_files,
+            max_jsonl_records=config.max_ai_jsonl_records,
+        ),
+        collect_codex(
+            config.codex_dir,
+            redactor,
+            max_jsonl_files=config.max_ai_jsonl_files,
+            max_jsonl_records=config.max_ai_jsonl_records,
+        ),
         collect_git(config.repos, redactor),
         collect_project_traces(config.repos, redactor),
         collect_github(config.github_json, config.github_user, config.enable_github, redactor),

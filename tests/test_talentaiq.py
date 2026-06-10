@@ -234,6 +234,49 @@ class TalentAIQTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             run_assessment(RunConfig(authorized=False))
 
+    def test_ai_jsonl_limits_are_configurable_and_zero_disables_limit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            codex_dir = root / "codex"
+            repo = root / "repo"
+            out_limited = root / "out-limited"
+            out_unlimited = root / "out-unlimited"
+            (codex_dir / "sessions").mkdir(parents=True)
+            (codex_dir / "sessions" / "one.jsonl").write_text(
+                "\n".join(json.dumps({"role": "user", "content": f"record {idx}"}) for idx in range(3)) + "\n",
+                encoding="utf-8",
+            )
+            self._init_git_repo(repo)
+
+            limited = run_assessment(
+                RunConfig(
+                    repos=[str(repo)],
+                    output_dir=str(out_limited),
+                    codex_dir=str(codex_dir),
+                    claude_dir=str(root / "missing-claude"),
+                    max_ai_jsonl_records=2,
+                    authorized=True,
+                )
+            )
+            limited_codex = next(source for source in limited["sources"] if source["name"] == "codex")
+            self.assertEqual(2, limited_codex["metrics"]["records"])
+            self.assertIsNone(limited_codex["metrics"]["max_jsonl_files"])
+            self.assertEqual(2, limited_codex["metrics"]["max_jsonl_records"])
+
+            unlimited = run_assessment(
+                RunConfig(
+                    repos=[str(repo)],
+                    output_dir=str(out_unlimited),
+                    codex_dir=str(codex_dir),
+                    claude_dir=str(root / "missing-claude"),
+                    max_ai_jsonl_records=None,
+                    authorized=True,
+                )
+            )
+            unlimited_codex = next(source for source in unlimited["sources"] if source["name"] == "codex")
+            self.assertEqual(3, unlimited_codex["metrics"]["records"])
+            self.assertIsNone(unlimited_codex["metrics"]["max_jsonl_records"])
+
     @staticmethod
     def _init_git_repo(repo: Path) -> None:
         repo.mkdir()

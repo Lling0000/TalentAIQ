@@ -14,8 +14,8 @@ from typing import Any, Iterable
 from .redaction import Redactor
 
 
-MAX_JSONL_FILES = 200
-MAX_JSONL_RECORDS = 20000
+DEFAULT_MAX_JSONL_FILES = None
+DEFAULT_MAX_JSONL_RECORDS = None
 
 PROJECT_TRACE_RULES: dict[str, list[str]] = {
     "readme_files": ["README.md", "README.zh-CN.md", "README"],
@@ -42,23 +42,37 @@ PROJECT_TRACE_RULES: dict[str, list[str]] = {
 }
 
 
-def collect_codex(codex_dir: str | None, redactor: Redactor) -> dict[str, Any]:
+def collect_codex(
+    codex_dir: str | None,
+    redactor: Redactor,
+    max_jsonl_files: int | None = DEFAULT_MAX_JSONL_FILES,
+    max_jsonl_records: int | None = DEFAULT_MAX_JSONL_RECORDS,
+) -> dict[str, Any]:
     root = Path(codex_dir or "~/.codex").expanduser()
     return _collect_ai_jsonl_source(
         source_name="codex",
         root=root,
         redactor=redactor,
         preferred_subdir="sessions",
+        max_jsonl_files=max_jsonl_files,
+        max_jsonl_records=max_jsonl_records,
     )
 
 
-def collect_claude(claude_dir: str | None, redactor: Redactor) -> dict[str, Any]:
+def collect_claude(
+    claude_dir: str | None,
+    redactor: Redactor,
+    max_jsonl_files: int | None = DEFAULT_MAX_JSONL_FILES,
+    max_jsonl_records: int | None = DEFAULT_MAX_JSONL_RECORDS,
+) -> dict[str, Any]:
     root = Path(claude_dir or "~/.claude").expanduser()
     return _collect_ai_jsonl_source(
         source_name="claude",
         root=root,
         redactor=redactor,
         preferred_subdir="projects",
+        max_jsonl_files=max_jsonl_files,
+        max_jsonl_records=max_jsonl_records,
     )
 
 
@@ -449,6 +463,8 @@ def _collect_ai_jsonl_source(
     root: Path,
     redactor: Redactor,
     preferred_subdir: str,
+    max_jsonl_files: int | None,
+    max_jsonl_records: int | None,
 ) -> dict[str, Any]:
     source = _empty_source(source_name, "available")
     metrics: dict[str, Any] = {
@@ -471,6 +487,8 @@ def _collect_ai_jsonl_source(
         "workflow_signals": 0,
         "long_context_records": 0,
         "secret_like_records_seen": 0,
+        "max_jsonl_files": max_jsonl_files,
+        "max_jsonl_records": max_jsonl_records,
     }
     if not root.exists():
         source["status"] = "missing"
@@ -489,7 +507,7 @@ def _collect_ai_jsonl_source(
         return source
 
     scan_root = root / preferred_subdir if (root / preferred_subdir).exists() else root
-    files = _recent_jsonl_files(scan_root)
+    files = _recent_jsonl_files(scan_root, max_jsonl_files)
     metrics["files_scanned"] = len(files)
     if not files:
         source["status"] = "missing"
@@ -508,11 +526,11 @@ def _collect_ai_jsonl_source(
         return source
 
     parse_errors: list[str] = []
-    record_budget = MAX_JSONL_RECORDS
+    record_budget = max_jsonl_records if max_jsonl_records and max_jsonl_records > 0 else None
     active_days: set[str] = set()
     seen_times: list[str] = []
     for file_path in files:
-        if record_budget <= 0:
+        if record_budget is not None and record_budget <= 0:
             break
         file_seen = datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc).isoformat()
         seen_times.append(file_seen)
@@ -520,11 +538,12 @@ def _collect_ai_jsonl_source(
         file_cumulative_token_usage: Counter[str] = Counter()
         try:
             for line_no, line in enumerate(file_path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
-                if record_budget <= 0:
+                if record_budget is not None and record_budget <= 0:
                     break
                 if not line.strip():
                     continue
-                record_budget -= 1
+                if record_budget is not None:
+                    record_budget -= 1
                 metrics["records"] += 1
                 try:
                     record = json.loads(line)
@@ -739,13 +758,15 @@ def _record_time(record: Any) -> str | None:
     return None
 
 
-def _recent_jsonl_files(root: Path) -> list[Path]:
+def _recent_jsonl_files(root: Path, max_jsonl_files: int | None) -> list[Path]:
     try:
         files = [path for path in root.rglob("*.jsonl") if path.is_file()]
     except OSError:
         return []
     files.sort(key=lambda path: path.stat().st_mtime if path.exists() else 0, reverse=True)
-    return files[:MAX_JSONL_FILES]
+    if max_jsonl_files and max_jsonl_files > 0:
+        return files[:max_jsonl_files]
+    return files
 
 
 def _parse_git_log(repo: Path, redactor: Redactor) -> dict[str, Any]:

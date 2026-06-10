@@ -31,6 +31,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--codex-dir", default=None, help="Codex home directory. Defaults to ~/.codex.")
     parser.add_argument("--claude-dir", default=None, help="Claude home directory. Defaults to ~/.claude.")
+    parser.add_argument(
+        "--max-ai-jsonl-files",
+        type=int,
+        default=0,
+        help="Max JSONL files to scan per AI source. Defaults to no limit; use 0 for no file limit.",
+    )
+    parser.add_argument(
+        "--max-ai-jsonl-records",
+        type=int,
+        default=0,
+        help="Max JSONL records to scan per AI source. Defaults to no limit; use 0 for no record limit.",
+    )
     parser.add_argument("--github-json", default=None, help="Optional local GitHub JSON export.")
     parser.add_argument("--github-user", default=None, help="Optional GitHub username for gh api mode.")
     parser.add_argument(
@@ -51,6 +63,8 @@ def main(argv: list[str] | None = None) -> int:
         output_dir=args.output_dir,
         codex_dir=args.codex_dir,
         claude_dir=args.claude_dir,
+        max_ai_jsonl_files=args.max_ai_jsonl_files or None,
+        max_ai_jsonl_records=args.max_ai_jsonl_records or None,
         github_json=args.github_json,
         github_user=args.github_user,
         enable_github=args.enable_github,
@@ -74,4 +88,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

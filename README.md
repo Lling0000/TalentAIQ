@@ -13,6 +13,10 @@ TalentAIQ Lite 读取候选人本机可访问的 Codex、Claude Code、本地 Gi
 
 它不是自动筛选系统，也不是录用建议系统。它不做候选人排名、不自动淘汰、不推荐录用，只把“看到了什么证据、缺了什么证据、面试应该追问什么”整理出来。
 
+## 效果预览
+
+![TalentAIQ Lite 画报示例](./docs/assets/talentaiq-poster-demo.png)
+
 ## 为什么需要它
 
 AI coding 已经进入真实开发流程，但“用了很多 AI”并不等于“工程能力强”。面试官真正需要的是可验证的证据线索：
@@ -188,6 +192,18 @@ python3 -m talentaiq.cli \
   --codex-dir ~/.codex \
   --claude-dir ~/.claude \
   --repo . \
+  --output-dir reports/self-check
+```
+
+当前默认会全量扫描 AI JSONL 记录，不设置文件数或记录数上限。
+如果后面需要临时做性能保护，也可以手动加限制：
+
+```bash
+python3 -m talentaiq.cli \
+  --authorize \
+  --repo . \
+  --max-ai-jsonl-files 1000 \
+  --max-ai-jsonl-records 100000 \
   --output-dir reports/self-check
 ```
 

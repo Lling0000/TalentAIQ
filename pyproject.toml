@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "talentaiq-lite"
+version = "0.1.0"
+description = "Local-first, candidate-authorized AI-native engineering evidence generator."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "TalentAIQ Lite" }]
+keywords = [
+  "ai-coding",
+  "candidate-evidence",
+  "privacy",
+  "interview",
+  "local-first",
+]
+dependencies = []
+
+[project.scripts]
+talentaiq = "talentaiq.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["talentaiq*"]
+
+[tool.unittest]
+start-dir = "tests"
